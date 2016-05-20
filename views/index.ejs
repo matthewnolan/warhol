@@ -1,0 +1,305 @@
+﻿<!-- http://blog.backand.com/ng-grid-and-a-simple-rest-api/ -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+
+  
+<link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/angular-ui/bower-ui-grid/master/ui-grid.min.css"> 
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.js"></script> 
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-touch.js"></script> 
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-animate.js"></script> 
+<script src="https://cdn.rawgit.com/angular-ui/bower-ui-grid/master/ui-grid.min.js"></script> 
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://www.parsecdn.com/js/parse-latest.js"></script>
+
+<style>
+.grid {
+  width: 500px;
+  height: 250px;
+}
+.text-warning {
+  color: #8a6d3b; 
+}
+</style>
+
+<title>Warhol</title>
+
+
+<script type="text/javascript">
+Parse.initialize("x41DyXourtwVQxl7L70DuD03Bi8dxxHQG9ZWtnBj", "GdbAmLm0Z84ySV6tPPkBLmc6LZajDqvWoL0u7ja2");
+
+var TestObject = Parse.Object.extend("TestObject");
+var testObject = new TestObject();
+
+    testObject.save({foo: "baz"}, {
+    success: function(object) {
+        console.log();
+
+    },
+    error: function(model, error) {
+        console.log("err");
+    }
+});
+
+
+var query = new Parse.Query(TestObject);
+query.get("sojtgZnGqL", {
+  success: function(data) {
+    // The object was retrieved successfully.
+    console.log("yesh");
+    console.log(data);
+  },
+  error: function(object, error) {
+    console.log("get err");
+    // The object was not retrieved successfully.
+    // error is a Parse.Error with an error code and message.
+  }
+});
+
+</script>
+    
+
+
+
+
+<script type='text/javascript'>//<![CDATA[
+
+var app = angular.module('uigrid', ['ngTouch', 'ui.grid', 'ui.grid.edit']);
+
+app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsService, $scope) {
+    $scope.sort = [];
+    $scope.filter = [];
+    $scope.pagination = {
+        pageSize: 6,
+        pageNumber: 1,
+        totalItems: null,
+        getTotalPages: function () {
+            return Math.ceil(this.totalItems / this.pageSize);
+        },
+        nextPage: function () {
+            if (this.pageNumber < this.getTotalPages()) {
+                this.pageNumber++;
+                $scope.load();
+            }
+        },
+        previousPage: function () {
+            if (this.pageNumber > 1) {
+                this.pageNumber--;
+                $scope.load();
+            }
+        }
+    };
+    
+    $scope.gridOptions = {
+        excludeProperties: '__metadata',
+        enablePaginationControls: false,
+        useExternalSorting: true,
+        useExternalFiltering: true,
+        enableFiltering: true,
+        onRegisterApi: function (gridApi) {
+            $scope.gridApi = gridApi;
+            
+            //declare the events
+            $scope.gridApi.core.on.sortChanged($scope, function (grid, sortColumns) {
+                $scope.sort = [];
+                angular.forEach(sortColumns, function (sortColumn) {
+                    $scope.sort.push({
+                        fieldName: sortColumn.name,
+                        order: sortColumn.sort.direction
+                    });
+                });
+                $scope.load();
+            });
+
+            $scope.gridApi.core.on.filterChanged($scope, function () {
+                $scope.filter = [];
+
+                var grid = this.grid;
+                angular.forEach(grid.columns, function (column) {
+                    var fieldName = column.field;
+                    var value = column.filters[0].term;
+                    var operator = "contains";
+                    if (value) {
+                        if (fieldName == "id") operator = "equals";
+                        else if (fieldName == "price") operator = "greaterThanOrEqualsTo";
+                        $scope.filter.push({
+                            fieldName: fieldName,
+                            operator: operator,
+                            value: value
+                        });
+                    }
+                });
+
+                $scope.load();
+            });
+            
+            $scope.gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
+                var id = rowEntity.__metadata.id;
+                var data = {};
+                data[colDef.name] = newValue;
+                
+                ProductsService.update(id, data).then(function(response){
+                    $scope.load(); //The change may trigger other server side action that may change additional data
+                    $scope.$apply();
+                });
+            });
+        }
+    };
+
+    // var test = {
+    //     name: "Juan Atkins",
+    //     type: "DJJJJ",
+    //     description: "dope beats",
+    //     music: "techno"
+    // }
+    // ProductsService.create(test).then(function(response){
+    //     console.log(response);
+    //     $scope.load(); //The change may trigger other server side action that may change additional data
+    //     $scope.$apply();
+    // });
+
+    ProductsService.delete("1").then(function(response){
+        console.log(response);
+        $scope.load(); //The change may trigger other server side action that may change additional data
+        $scope.$apply();
+    });
+
+    
+    $scope.gridOptions.columnDefs = [
+        { name: 'id', enableCellEdit: false, width: '10%' },
+        { name: 'name', enableCellEdit: false, displayName: 'Name', width: '20%' },
+        { name: 'type', displayName: 'Type', enableCellEdit: true, width: '20%' },
+        { name: 'description', displayName: 'Description', width: '30%' },
+        { name: 'price', displayName: 'Price', width: '20%' }
+        // { name: 'music', displayName: 'Music', width: '20%' }
+      ];
+ 
+
+    $scope.load = function () {
+        ProductsService.readAll($scope.pagination.pageSize, $scope.pagination.pageNumber, $scope.sort, $scope.filter).then(function (response) {
+            console.log(response);
+            $scope.gridOptions.data = response.data;
+            $scope.pagination.totalItems = response.totalRows;
+
+        });
+    };
+
+    $scope.load();
+}]);
+
+
+(function () {
+
+    angular.module('uigrid')
+        .service('ProductsService', ['$http', ProductsService]);
+
+    function ProductsService($http) {
+
+        var self = this;
+        var baseUrl = 'https://api.backand.com/1/objects/';
+        var anonymousToken = {
+            // 'AnonymousToken': '78020290-5df3-44b8-9bdb-7b3b4fea2f25'
+            'AnonymousToken': '5f704923-18a8-4d76-a416-6808e2357566'
+        };
+
+        var objectName = 'products';
+
+        self.readAll = function (pageSize, pageNumber, sort, filter) {
+            return $http({
+                method: 'GET',
+                url: baseUrl + objectName,
+                params: {
+                    pageSize: pageSize,
+                    pageNumber: pageNumber,
+                    sort: sort,
+                    filter: filter
+                },
+                headers: anonymousToken
+            }).then(function (response) {
+                return response.data;
+            });
+        };
+
+        self.readOne = function (id) {
+            return $http({
+                method: 'GET',
+                url: baseUrl + objectName + '/' + id,
+                headers: anonymousToken
+            }).then(function (response) {
+                return response.data;
+            });
+        };
+
+        self.create = function (data) {
+            return $http({
+                method: 'POST',
+                url: baseUrl + objectName,
+                data: data,
+                params: {
+                    returnObject: true
+                },
+                headers: anonymousToken
+            }).then(function (response) {
+                return response.data;
+            });
+        };
+
+        self.update = function (id, data) {
+            return $http({
+                method: 'PUT',
+                url: baseUrl + objectName + '/' + id,
+                data: data,
+                headers: anonymousToken
+            }).then(function (response) {
+                return response.data;
+            });
+        };
+
+        self.delete = function (id) {
+            return $http({
+                method: 'DELETE',
+                url: baseUrl + objectName + '/' + id,
+                headers: anonymousToken
+            });
+        };
+
+    }
+}());
+//]]> 
+
+</script>
+
+  
+</head>
+
+<body>
+  <div ng-app="uigrid">
+    <div ng-controller="MainCtrl">
+        <p><h1>Warhol. A database of art works</h1></p>
+
+        <form>
+            Piece Name:<br>
+            <input type="text" name="firstname" ><br>
+            Last name:<br>
+            <input type="text" name="lastname">
+        </form>
+
+        <div class="text-warning">Only the <b>Description</b> and <b>Price</b> columns are editable in the server side</div>
+        <div ui-grid="gridOptions" class="grid" ui-grid-edit></div>
+        <p>Current page:
+            <input type="number" min="1" max="{{ pagination.getTotalPages() }}" ng-model="pagination.pageNumber" ng-change="load()">of {{ pagination.getTotalPages() }}</p>
+        <button type="button" class="btn btn-success" ng-click="pagination.previousPage()">previous page</button>
+        <button type="button" class="btn btn-success" ng-click="pagination.nextPage()">next page</button>
+    </div>
+    <p><a target="_blank" href="http://blog.backand.com/ng-grid-and-a-simple-rest-api/">Back to the article</a></p>
+    <p><a target="_blank" href="https://www.backand.com/apps/#/sign_up">Create your own backend</a></p>
+</div>
+  
+</body>
+
+</html>
+

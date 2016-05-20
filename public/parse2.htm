@@ -1,0 +1,144 @@
+<!-- http://blog.backand.com/ng-grid-and-a-simple-rest-api/ -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+
+  
+
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://www.parsecdn.com/js/parse-latest.js"></script>
+
+<style>
+.grid {
+  width: 500px;
+  height: 250px;
+}
+.text-warning {
+  color: #8a6d3b; 
+}
+</style>
+
+<title>Warhol</title>
+
+
+<script type="text/javascript">
+Parse.initialize("x41DyXourtwVQxl7L70DuD03Bi8dxxHQG9ZWtnBj", "GdbAmLm0Z84ySV6tPPkBLmc6LZajDqvWoL0u7ja2");
+
+var product1 = {
+    artist: "Andy Warhol",
+    title: "Marilyn",
+    date: "1962",
+    type: "Acrylic on canvas"
+}
+
+var warhol = {}
+
+
+warhol.readAll = function (pageSize, pageNumber, sort, filter) {
+    var query = new Parse.Query("Products");
+    query.find({
+      success: function(results) {
+        console.log(results);
+        // results is an array of Parse.Object.
+      },
+
+      error: function(error) {
+        console.log(error);
+        // error is an instance of Parse.Error.
+      }
+    });    
+}
+warhol.readOne = function (id) {
+    var products = Parse.Object.extend("Products");
+    var query = new Parse.Query(products);
+    query.equalTo("objectId", id);
+    query.find( {
+      success: function(results) {
+        console.log(results);
+      },
+      error: function(error) {
+        console.error(error);
+      }
+    }); 
+}
+warhol.create = function (data) {
+    var Products = Parse.Object.extend("Products");
+    var products = new Products();
+        products.save(product1, {
+        success: function(object) {
+            console.log(object);
+        },
+        error: function(model, error) {
+            console.log(model, error);
+        }
+    });
+
+}
+warhol.update = function (id, data) {
+    var products = Parse.Object.extend("Products");
+    var query = new Parse.Query(products);
+    query.equalTo("objectId", id);
+    query.find( {
+      success: function(results) {
+        console.log(results);
+        results[0].save(data, {
+            success: function(object) {
+                console.log(object);
+            },
+            error: function(model, error) {
+                console.log(model, error);
+            }  
+        })      
+      },
+      error: function(error) {
+        console.error(error);
+      }
+    });     
+}
+warhol.delete = function (id) {
+    var products = Parse.Object.extend("Products");
+    var query = new Parse.Query(products);
+    query.equalTo("objectId", id);
+    query.find( {
+      success: function(results) {
+        console.log(results);
+        results[0].destroy({
+            success: function(object) {
+                console.log(object);
+            },
+            error: function(model, error) {
+                console.log(model, error);
+            }  
+        })      
+      },
+      error: function(error) {
+        console.error(error);
+      }
+    });      
+}
+
+console.log(warhol);
+
+// warhol.create()
+
+
+
+var product2 = {
+    artist: "Dandy Warhol",
+    title: "Soup",
+    date: "2217"
+}
+// warhol.update('PMiBwPHb5c', product2)
+// warhol.delete('PMiBwPHb5c')
+
+
+</script>
+  
+</body>
+
+</html>
+
