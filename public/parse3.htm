@@ -44,7 +44,7 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
     $scope.sort = [];
     $scope.filter = [];
     $scope.pagination = {
-        pageSize: 50,
+        pageSize: 200,
         pageNumber: 1,
         totalItems: null,
         getTotalPages: function () {
@@ -143,37 +143,6 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
     //     $scope.$apply();
     // });
 
-    var product1 = {
-            img1: "https://placekitten.com/200/300",
-            artist: "Many1",
-            title: "Whatever",
-            medium: "Acrylic on canvas",
-            dimensions: "8.5 x 11",
-            date: "1962",
-            gallery: "Matts art emporium",
-            price: "$99",
-            notes: "Matt willing to trade for a Soup piece"
-        }
-    var product2 = {
-            img1: "https://placekitten.com/200/300",
-            artist: "Many2",
-            title: "Whatever",
-            medium: "Acrylic on canvas",
-            dimensions: "8.5 x 11",
-            date: "1962",
-            gallery: "Matts art emporium",
-            price: "$99",
-            notes: "Matt willing to trade for a Soup piece"
-        }
-    var ok = [product1, product2]
-        
-    ProductsService.createMany(ok).then(function(response){
-        console.log(response);
-        $scope.load(); 
-        $scope.$apply();
-    });
-    
-
     $scope.gridOptions.columnDefs = [
         { name: 'objectId', enableCellEdit: false },
         { field: 'img1', name: 'Pic', width: '5%', cellTooltip: true, headerTooltip: true, enableCellEdit: false, cellTemplate:"<img width=\"30px\" ng-src=\"{{grid.getCellValue(row, col)}}\" lazy-src>"},
@@ -219,6 +188,7 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
             var contents = e.target.result;
             console.log(contents);
             var obj = JSON.parse(contents);
+            storeLongJSON(obj)
             for (prop in obj){
                 // updateOrAddInvestor(obj[prop])
                 console.log(obj[prop]);
@@ -227,6 +197,20 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
         reader.readAsText(file);
     }
     document.getElementById('file-input').addEventListener('change', importJson, false);
+
+    var storeCounter = 0;
+    function storeLongJSON(jsonIn){ 
+        ProductsService.create(jsonIn[storeCounter]).then(function(response){
+            $scope.load(); 
+            $scope.$apply();
+            storeCounter++;
+            if (storeCounter == jsonIn.length){
+                console.log("break!");
+                return;
+            }
+            storeLongJSON(jsonIn);
+        }); 
+    }
 
 
 
@@ -262,12 +246,6 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
             var products = new Products();
             return products.save(data)
         }        
-        self.createMany = function (data) {
-            if (typeof data != 'object') return;
-            var Products = Parse.Object.extend("Products");
-            var products = new Products();
-            return products.saveALL(data)
-        }
         self.update = function (id, data) {
             var products = Parse.Object.extend("Products");
             var query = new Parse.Query(products);
