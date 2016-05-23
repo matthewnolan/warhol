@@ -1,8 +1,8 @@
 {
-  "name": "wtf",
+  "name": "Warhol",
   "version": "1.0.0",
-  "description": "in dust we trust",
-  "main": "app.js",
+  "description": "DB for Art",
+  "private": true,  
   "dependencies": {
     "angellist": "^0.1.0",
     "ejs": "^2.3.4",
@@ -19,9 +19,8 @@
     "gulp": "^3.9.0",
     "gulp-livereload": "^3.8.1"
   },
-  "scripts": {
-    "test": "run"
-  },
-  "author": "",
-  "license": "ISC"
+  "engines": {
+    "node": ">=0.8.0",
+    "npm": "1.2.x"
+  }
 }
