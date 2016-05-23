@@ -37,14 +37,14 @@
 
 <script type='text/javascript'>
 
-var app = angular.module('uigrid', ['ngTouch', 'ui.grid', 'ui.grid.edit']);
+var app = angular.module('uigrid', ['ngTouch', 'ui.grid', 'ui.grid.edit', 'ui.grid.selection']);
 
 app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsService, $scope) {
 
     $scope.sort = [];
     $scope.filter = [];
     $scope.pagination = {
-        pageSize: 6,
+        pageSize: 50,
         pageNumber: 1,
         totalItems: null,
         getTotalPages: function () {
@@ -64,16 +64,32 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
         }
     };
     
+    var areAnyRowsSelected = false;
     $scope.gridOptions = {
-        excludeProperties: '__metadata',
-        enablePaginationControls: false,
-        useExternalSorting: true,
-        useExternalFiltering: true,
         enableFiltering: true,
+        treeRowHeaderAlwaysVisible: false,
+        // enablePaginationControls: true,
+        paginationPageSizes: [50, 100, 500],
+        paginationPageSize: 50, 
+
+
+        enableRowSelection: true,
+        enableSelectAll: true,
+        selectionRowHeaderWidth: 35 ,
+        rowTemplate:'expandableRowTemplate.html',
+
+        // excludeProperties: '__metadata',
+        // enablePaginationControls: false,
+        // useExternalSorting: true,
+        // useExternalFiltering: true,
+        // enableFiltering: true,
         onRegisterApi: function (gridApi) {
             $scope.gridApi = gridApi;
             
-            //declare the events
+            $scope.gridApi.selection.on.rowSelectionChanged($scope,function(row){
+                areAnyRowsSelected = row.isSelected;
+            });
+
             $scope.gridApi.core.on.sortChanged($scope, function (grid, sortColumns) {
                 $scope.sort = [];
                 angular.forEach(sortColumns, function (sortColumn) {
@@ -121,31 +137,54 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
     };
 
 
-    // var test = {
-    //     name: "Juan Atkins",
-    //     type: "DJJJJ",
-    //     description: "dope beats",
-    //     music: "techno"
-    // }
-    // ProductsService.create(test).then(function(response){
-    //     console.log(response);
-    //     $scope.load(); //The change may trigger other server side action that may change additional data
-    //     $scope.$apply();
-    // });
-
     // ProductsService.delete("1").then(function(response){
     //     console.log(response);
     //     $scope.load(); //The change may trigger other server side action that may change additional data
     //     $scope.$apply();
     // });
 
+    var product1 = {
+            img1: "https://placekitten.com/200/300",
+            artist: "Many1",
+            title: "Whatever",
+            medium: "Acrylic on canvas",
+            dimensions: "8.5 x 11",
+            date: "1962",
+            gallery: "Matts art emporium",
+            price: "$99",
+            notes: "Matt willing to trade for a Soup piece"
+        }
+    var product2 = {
+            img1: "https://placekitten.com/200/300",
+            artist: "Many2",
+            title: "Whatever",
+            medium: "Acrylic on canvas",
+            dimensions: "8.5 x 11",
+            date: "1962",
+            gallery: "Matts art emporium",
+            price: "$99",
+            notes: "Matt willing to trade for a Soup piece"
+        }
+    var ok = [product1, product2]
+        
+    ProductsService.createMany(ok).then(function(response){
+        console.log(response);
+        $scope.load(); 
+        $scope.$apply();
+    });
     
+
     $scope.gridOptions.columnDefs = [
-        { name: 'objectId', enableCellEdit: false, width: '10%' },
-        { name: 'artist', enableCellEdit: false, displayName: 'Artist', width: '20%' },
-        { name: 'title', displayName: 'Title', enableCellEdit: true, width: '20%' },
-        { name: 'type', displayName: 'Type', width: '30%' },
-        { name: 'price', displayName: 'Price', width: '20%' }
+        { name: 'objectId', enableCellEdit: false },
+        { field: 'img1', name: 'Pic', width: '5%', cellTooltip: true, headerTooltip: true, enableCellEdit: false, cellTemplate:"<img width=\"30px\" ng-src=\"{{grid.getCellValue(row, col)}}\" lazy-src>"},
+        { name: 'artist', displayName: 'Artist' },
+        { name: 'title', displayName: 'Title' },
+        { name: 'medium', displayName: 'Medium' },
+        { name: 'dimensions', displayName: 'Dimensions' },
+        { name: 'date', displayName: 'Year' },
+        { name: 'gallery', displayName: 'Gallery' },
+        { name: 'price', displayName: 'Price' },
+        { name: 'notes', displayName: 'Notes' }
     ];
  
 
@@ -158,12 +197,40 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
                 stuff.push(response[i].toJSON())
             }
             $scope.gridOptions.data = stuff;
-            $scope.pagination.totalItems = response.totalRows;
+            $scope.pagination.totalItems = response.length;
 
         });
     };
 
     $scope.load();
+
+
+    $scope.importBtn = function(){
+        console.log("importBtn");
+        $("#file-input").click();
+    }
+    function importJson(e) {
+        var file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var contents = e.target.result;
+            console.log(contents);
+            var obj = JSON.parse(contents);
+            for (prop in obj){
+                // updateOrAddInvestor(obj[prop])
+                console.log(obj[prop]);
+            }
+        };
+        reader.readAsText(file);
+    }
+    document.getElementById('file-input').addEventListener('change', importJson, false);
+
+
+
+
 }]);
 
 
@@ -190,9 +257,16 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
             return query.find();
         }
         self.create = function (data) {
+            if (typeof data != 'object') return;
             var Products = Parse.Object.extend("Products");
             var products = new Products();
-            return products.save(product1)
+            return products.save(data)
+        }        
+        self.createMany = function (data) {
+            if (typeof data != 'object') return;
+            var Products = Parse.Object.extend("Products");
+            var products = new Products();
+            return products.saveALL(data)
         }
         self.update = function (id, data) {
             var products = Parse.Object.extend("Products");
@@ -239,9 +313,79 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
               }
             });      
         }
+
+        
+
     }
 }());
 
+
+// stuff to scrape Artsy
+function allTheScroll(){
+    var numberOfSavesLong = $('.settings-quasi-infinite div.settings-quasi-infinite__total').text();
+    var numberOfSaves = numberOfSavesLong.substring(0, 3)
+    var numberPages = Math.round(numberOfSaves/10);
+        var counter = 0;
+        var ticker = setInterval(function(){
+            $('.js-settings-quasi-infinite__more__button').click()
+            counter ++;
+            console.log("tick", counter);
+            if (counter === numberPages){
+                console.log("done ticking!");
+                clearInterval(ticker)
+                scapeArtsy()
+            }
+        },999)
+}
+
+function scapeArtsy(){
+    var savedWorks = [];
+    var lastScrapeArtsy = Date.now();
+    $('.settings-quasi-infinite__collection figure').each( function(node){
+        var img1 = $(this).find('.artwork-item-image img').attr("src")
+        var artsyLink = $(this).find('.artwork-item-image-link').attr("href")
+        var artist = $(this).find('figcaption.artwork-item-caption .artwork-item-artist').text()
+        var title = $(this).find('figcaption.artwork-item-caption .artwork-item-title em').text()
+        var yearLong = $(this).find('figcaption.artwork-item-caption .artwork-item-title').text()
+        var yearShort = yearLong.substr(yearLong.length - 4);
+        var gallery = $(this).find('figcaption.artwork-item-caption .artwork-item-partner a').text()
+        var galleryLinkArtsy = $(this).find('figcaption.artwork-item-caption .artwork-item-partner a').attr("href")
+        var price = $(this).find('figcaption.artwork-item-caption p.artwork-item-sale-price').text();
+        var artistLinkArtsy = $(this).find('figcaption.artwork-item-caption .artwork-item-artist a').attr("href");
+
+        var newPiece = {
+                img1: img1,
+                artist: artist,
+                title: title,
+                medium: "",
+                dimensions: "",
+                date: yearShort,
+                gallery: gallery,
+                galleryLinkArtsy: galleryLinkArtsy,
+                price: price,
+                artsyLink: artsyLink,
+                artistLinkArtsy: artistLinkArtsy,
+                lastScrapeArtsy: lastScrapeArtsy,
+                notes: ""
+        }
+        savedWorks.push(newPiece)
+    })
+    console.log(savedWorks);
+
+    function exportJsonBtn(){
+            // console.log(JSON.stringify(data));
+            var csvContent = "data:application/json;charset=utf-8,";
+            csvContent += JSON.stringify(savedWorks)
+            var encodedUri = encodeURI(csvContent);
+            // window.open(encodedUri);
+            var timestamp = Math.floor(Date.now() / 1000);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "my_data_" + timestamp + ".json");
+            link.click(); 
+    }
+    exportJsonBtn();
+}
 
 </script>
 
@@ -253,16 +397,27 @@ app.controller('MainCtrl', ['ProductsService', '$scope', function (ProductsServi
     <div class="row">
         <div class="col-sm-12">
             <div>
-                <p><h1>Warhol. A database of art works</h1></p>
+                <p><h1 style="display:inline-block">
+                        <img src="/img/warhol_sm.png" style="max-height:31px; display:inline-block; vertical-align:bottom">
+                        Andy. A database of art.
+                </h1></p>
 
-                <form>
+<!--                 <form>
                     Piece Name:<br>
                     <input type="text" name="firstname" ><br>
                     Last name:<br>
                     <input type="text" name="lastname">
-                </form>
+                </form> -->
 
-                <div ui-grid="gridOptions" class="grid" ui-grid-edit></div>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-default" ng-click="importBtn()">Import</button>
+                    <button type="button" class="btn btn-sm btn-default">New</button>
+                    <button type="button" class="btn btn-sm btn-danger">Del</button>
+                </div>
+                <input type="file" id="file-input" style="display:none"/>   
+
+                <br><br>
+                <div ui-grid="gridOptions" class="grid" ui-grid-edit ui-grid-selection ui-grid-grouping ui-grid-pinning ui-grid-expandable ui-grid-pagination></div>
                 <p>Current page:
                     <input type="number" min="1" max="{{ pagination.getTotalPages() }}" ng-model="pagination.pageNumber" ng-change="load()">of {{ pagination.getTotalPages() }}</p>
                 <button type="button" class="btn btn-success" ng-click="pagination.previousPage()">previous page</button>
