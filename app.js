@@ -1,19 +1,20 @@
-// var https = require('https');
-var express = require('express')
+var express = require('express');
 var app = express();
-// var Parse = require('parse');
-// var url = require('url');
-// var request = require('request');
-// var Q = require('q');
 
-app.set('view engine', 'ejs');
+app.set('port', (process.env.PORT || 5000));
+
 app.use(express.static(__dirname + '/public'));
 
+// views is directory for all template files
+app.set('views', __dirname + '/views');
+app.set('view engine', 'ejs');
 
-app.get('/', function(req, res) {
-    res.render('index');
-})
+app.get('/', function(request, response) {
+  response.render('pages/index');
+});
 
-app.listen(3000);
+app.listen(app.get('port'), function() {
+  console.log('Node app is running on port', app.get('port'));
+});
 
 
