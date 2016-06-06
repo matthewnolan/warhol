@@ -1,0 +1,6 @@
+https://www.artsy.net/galleries?location=hong-kong-hong-kong
+https://www.artsy.net/galleries?location=new-york-ny-usa
+
+
+one gallery can have multiple locations, ie:
+https://www.artsy.net/galerie-perrotin/contact
