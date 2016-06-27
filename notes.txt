@@ -4,3 +4,11 @@ https://www.artsy.net/galleries?location=new-york-ny-usa
 
 one gallery can have multiple locations, ie:
 https://www.artsy.net/galerie-perrotin/contact
+
+Each gallery works in stock
+https://www.artsy.net/walter-wickiser-gallery/works
+
+
+
+shit!
+https://github.com/electron/electron/issues/2048
